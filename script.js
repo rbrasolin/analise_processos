@@ -1,3 +1,5 @@
+// Parte 1 Código
+
 let ultimoNomeArquivo = "fluxograma_processo";
 
 const CONFIG = {
@@ -900,6 +902,8 @@ function escolherParesCandidatos(origem, destino, rotulo = "") {
   return [{ startSide: "right", endSide: "left" }];
 }
 
+// Parte 2 Código
+
 function montarRotaOrtogonal(points, label, startSide = "", endSide = "") {
   return {
     points: normalizarPontos(points),
@@ -1343,462 +1347,452 @@ function renderizarAnaliseExecutiva(dados) {
   `;
 }
 
-function gerarFluxo() {
-  const texto = document.getElementById("entrada").value;
+// Parte 3 Código
 
-  if (!texto.trim()) {
-    alert("Cole a tabela do Excel primeiro.");
-    return;
-  }
-
-  const desenho = obterValorCampo("desenho");
-  const processo = obterValorCampo("processo");
-  const analista = obterValorCampo("analista");
-  const negocio = obterValorCampo("negocio");
-  const area = obterValorCampo("area");
-  const gestor = obterValorCampo("gestor");
-
-  const linhasBrutas = texto.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n").filter(l => l.trim() !== "");
-  let linhas = linhasBrutas.map(l => l.split("\t"));
-
-  if (linhas.length && ehCabecalho(linhas[0])) linhas.shift();
-
-  const etapas = [];
-  const idsValidos = new Set();
-
-  linhas.forEach((col) => {
-    while (col.length < 15) col.push("");
-
-    const ordem = Number(limpar(col[0])) || 0;
-    const id = limpar(col[1]);
-    const atividade = limpar(col[2]);
-    const tipo = limpar(col[3]) || "Não informado";
-    const sistema = limpar(col[4]) || "Sem sistema informado";
-    const tempo = tempoParaSegundos(limpar(col[5]));
-    const proxSim = limpar(col[6]);
-    const proxNao = limpar(col[7]);
-    const conexoesExtras = limpar(col[8]);
-    const coluna = Number(limpar(col[9])) || 1;
-    const linha = Number(limpar(col[10])) || 1;
-    const categoriaOportunidade = normalizarCategoriaOportunidade(col[11]);
-    const percentualReducao = parsePercentual(col[12]);
-    const observacao = limpar(col[13]);
-    const cor = normalizarCor(col[14]);
-
-    if (!id || !atividade) return;
-
-    etapas.push({
-      ordem,
-      id,
-      atividade,
-      tipo,
-      sistema,
-      tempo,
-      proxSim,
-      proxNao,
-      conexoesExtras,
-      coluna,
-      linha,
-      categoriaOportunidade,
-      percentualReducao,
-      potencialReducao: percentualReducao,
-      observacao,
-      cor
-    });
-
-    idsValidos.add(id);
-  });
-
-  etapas.sort((a, b) => a.ordem - b.ordem);
-
-  if (!etapas.length) {
-    alert("Nenhuma etapa válida foi encontrada na tabela.");
-    return;
-  }
-
-  ultimoNomeArquivo = gerarNomeArquivo();
-
-  const alturaPadraoNos = calcularAlturaPadraoNos(etapas);
-  const maiorAlturaLosango = Math.ceil(alturaPadraoNos * CONFIG.decisionHeightFactor);
-  const rowSlotHeight = Math.max(alturaPadraoNos, maiorAlturaLosango);
-
-  const etapaPorId = {};
-  etapas.forEach((e) => { etapaPorId[e.id] = e; });
-
-  let maxCol = 1;
-  let maxRow = 1;
-
-  etapas.forEach((etapa) => {
-    if (etapa.coluna > maxCol) maxCol = etapa.coluna;
-    if (etapa.linha > maxRow) maxRow = etapa.linha;
-  });
-
-  const svgWidth = CONFIG.marginX * 2 + maxCol * CONFIG.boxWidth + (maxCol - 1) * CONFIG.colGap + 300;
-  const svgHeight = CONFIG.marginY * 2 + maxRow * rowSlotHeight + (maxRow - 1) * CONFIG.rowGap + 220;
-
-  const svg = criarElementoSVG("svg");
-  svg.setAttribute("width", svgWidth);
-  svg.setAttribute("height", svgHeight);
-  svg.setAttribute("viewBox", `0 0 ${svgWidth} ${svgHeight}`);
-  svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-  svg.setAttribute("id", "fluxogramaSVG");
-
-  criarMarkerArrow(svg);
-
-  const posicoes = {};
-
-  etapas.forEach((etapa) => {
-    const width = obterLarguraNo(etapa);
-    const height = obterAlturaNo(etapa, alturaPadraoNos);
-
-    const x = CONFIG.marginX + (etapa.coluna - 1) * (CONFIG.boxWidth + CONFIG.colGap);
-    const yBase = CONFIG.marginY + (etapa.linha - 1) * (rowSlotHeight + CONFIG.rowGap);
-    const y = yBase + (rowSlotHeight - height) / 2;
-
-    posicoes[etapa.id] = {
-      id: etapa.id,
-      x,
-      y,
-      width,
-      height,
-      gridCol: etapa.coluna,
-      gridRow: etapa.linha,
-      isDecision: isPergunta(etapa.atividade)
-    };
-  });
-
-  const primeiraEtapa = etapas[0];
-  const ultimaEtapa = etapas[etapas.length - 1];
-
-  posicoes["__INICIO__"] = {
-    id: "__INICIO__",
-    x: posicoes[primeiraEtapa.id].x - 150,
-    y: posicoes[primeiraEtapa.id].y + (posicoes[primeiraEtapa.id].height / 2) - 18,
-    width: 80,
-    height: 36,
-    gridCol: primeiraEtapa.coluna - 1,
-    gridRow: primeiraEtapa.linha,
-    isDecision: false
+function montarRotaOrtogonal(points, label, startSide = "", endSide = "") {
+  return {
+    points: normalizarPontos(points),
+    label,
+    startSide,
+    endSide
   };
-
-  posicoes["__FIM__"] = {
-    id: "__FIM__",
-    x: posicoes[ultimaEtapa.id].x + posicoes[ultimaEtapa.id].width + 70,
-    y: posicoes[ultimaEtapa.id].y + (posicoes[ultimaEtapa.id].height / 2) - 18,
-    width: 60,
-    height: 36,
-    gridCol: ultimaEtapa.coluna + 1,
-    gridRow: ultimaEtapa.linha,
-    isDecision: false
-  };
-
-  desenharCapsula(svg, "Início", posicoes["__INICIO__"].x, posicoes["__INICIO__"].y, posicoes["__INICIO__"].width, posicoes["__INICIO__"].height);
-  desenharCapsula(svg, "Fim", posicoes["__FIM__"].x, posicoes["__FIM__"].y, posicoes["__FIM__"].width, posicoes["__FIM__"].height);
-
-  etapas.forEach((etapa) => {
-    const pos = posicoes[etapa.id];
-    desenharNo(svg, etapa, pos.x, pos.y, pos.width, pos.height, corHex(etapa.cor));
-  });
-
-  const sharedRegistry = {};
-  let loops = 0;
-  let conexoesExtrasCount = 0;
-  let decisoes = 0;
-  const etapasImpactadasRetrabalho = new Set();
-  const tiposTempo = {};
-  const sistemasTempo = {};
-  let tempoTotal = 0;
-
-  const desenharListaConexoes = (origemEtapa, destinoIds, rotulo) => {
-    destinoIds.forEach((destinoId, index) => {
-      if (!destinoEhValido(destinoId, idsValidos)) return;
-
-      const origem = posicoes[origemEtapa.id];
-      const destino = posicoes[destinoId];
-      if (!origem || !destino) return;
-
-      desenharConexao(svg, origem, destino, rotulo, index, posicoes, sharedRegistry);
-
-      const destinoEtapa = etapaPorId[destinoId];
-      if (destinoEtapa && destinoEtapa.ordem < origemEtapa.ordem) {
-        loops++;
-        adicionarEtapasImpactadasPorRetorno(origemEtapa.id, destinoId, etapaPorId, etapas, etapasImpactadasRetrabalho);
-      }
-    });
-  };
-
-  desenharConexao(svg, posicoes["__INICIO__"], posicoes[primeiraEtapa.id], "", 0, posicoes, sharedRegistry);
-
-  etapas.forEach((etapa) => {
-    tempoTotal += etapa.tempo;
-    if (isPergunta(etapa.atividade)) decisoes++;
-
-    if (!tiposTempo[etapa.tipo]) tiposTempo[etapa.tipo] = 0;
-    tiposTempo[etapa.tipo] += etapa.tempo;
-
-    if (!sistemasTempo[etapa.sistema]) sistemasTempo[etapa.sistema] = 0;
-    sistemasTempo[etapa.sistema] += etapa.tempo;
-
-    const destinosSim = quebrarListaIds(etapa.proxSim);
-    const destinosNao = quebrarListaIds(etapa.proxNao);
-    const destinosExtras = quebrarListaIds(etapa.conexoesExtras);
-
-    desenharListaConexoes(etapa, destinosSim, isPergunta(etapa.atividade) ? "Sim" : "");
-    desenharListaConexoes(etapa, destinosNao, isPergunta(etapa.atividade) ? "Não" : "");
-    desenharListaConexoes(etapa, destinosExtras, "");
-
-    conexoesExtrasCount += destinosExtras.length;
-  });
-
-  desenharConexao(svg, posicoes[ultimaEtapa.id], posicoes["__FIM__"], "", 0, posicoes, sharedRegistry);
-
-  document.getElementById("diagram").innerHTML = "";
-  document.getElementById("diagram").appendChild(svg);
-
-  const atividadesTempo = etapas.map((etapa) => ({
-    atividade: etapa.atividade,
-    tempo: etapa.tempo
-  })).sort((a, b) => b.tempo - a.tempo);
-
-  const tiposOrdenados = Object.entries(tiposTempo).map(([nome, tempo]) => ({ nome, tempo })).sort((a, b) => b.tempo - a.tempo);
-  const sistemasOrdenados = Object.entries(sistemasTempo).map(([nome, tempo]) => ({ nome, tempo })).sort((a, b) => b.tempo - a.tempo);
-
-  let tempoPotencialRetrabalho = 0;
-  etapas.forEach((etapa) => {
-    if (etapasImpactadasRetrabalho.has(etapa.id)) tempoPotencialRetrabalho += etapa.tempo;
-  });
-
-  const impactoPotencialRetrabalhoNum = tempoTotal ? (tempoPotencialRetrabalho / tempoTotal) * 100 : 0;
-  const taxaDecisaoNum = etapas.length ? (decisoes / etapas.length) * 100 : 0;
-
-  document.getElementById("infoProcesso").innerHTML = renderInformacoesProcessoExecutivas({
-    desenho, processo, analista, negocio, area, gestor
-  });
-
-  const dadosAnalise = {
-    tempoTotal,
-    loops,
-    conexoesExtrasCount,
-    tempoPotencialRetrabalho,
-    impactoPotencialRetrabalho: impactoPotencialRetrabalhoNum,
-    decisoes,
-    taxaDecisao: taxaDecisaoNum,
-    tempoPorTipo: tiposOrdenados.map(item => ({
-      tipo: item.nome,
-      tempo: item.tempo,
-      percentual: tempoTotal ? (item.tempo / tempoTotal) * 100 : 0
-    })),
-    tempoPorSistema: sistemasOrdenados.map(item => ({
-      sistema: item.nome,
-      tempo: item.tempo,
-      percentual: tempoTotal ? (item.tempo / tempoTotal) * 100 : 0
-    })),
-    pareto: (() => {
-      let acumulado = 0;
-      return atividadesTempo.map(item => {
-        const percentual = tempoTotal ? (item.tempo / tempoTotal) * 100 : 0;
-        acumulado += percentual;
-        return {
-          atividade: item.atividade,
-          tempo: item.tempo,
-          percentual,
-          pareto: acumulado
-        };
-      });
-    })(),
-    simulacaoMelhoria: montarDadosSimulacaoMelhoria(etapas)
-  };
-
-  document.getElementById("metricas").innerHTML = renderizarAnaliseExecutiva(dadosAnalise);
 }
 
-function obterSVGPronto() {
-  const svgOriginal = document.querySelector("#diagram svg");
-  if (!svgOriginal) {
-    alert("Gere o fluxo primeiro.");
-    return null;
+function getMergePoint(end, side, gap = CONFIG.sharedMergeGap) {
+  switch (side) {
+    case "left": return { x: end.x - gap, y: end.y };
+    case "right": return { x: end.x + gap, y: end.y };
+    case "top": return { x: end.x, y: end.y - gap };
+    case "bottom": return { x: end.x, y: end.y + gap };
+    default: return { x: end.x - gap, y: end.y };
   }
-  return svgOriginal.cloneNode(true);
 }
 
-function coletarDadosAnaliseEstruturados() {
-  const etapas = [];
-  const texto = document.getElementById("entrada").value;
+function escolherRota(origem, destino, contexto = {}) {
+  const rotulo = contexto.rotulo || "";
+  const posicoes = contexto.posicoes || {};
+  const excludeIds = [origem.id, destino.id, "__INICIO__", "__FIM__"];
 
-  const linhasBrutas = texto.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n").filter(l => l.trim() !== "");
-  let linhas = linhasBrutas.map(l => l.split("\t"));
+  if (origem.id === "__INICIO__") {
+    const start = getAnchorPoint(origem, "right");
+    const end = getAnchorPoint(destino, "left");
+    const rota = encontrarRotaSegura(start, end, posicoes, excludeIds, "left", "right", destino);
+    return montarRotaOrtogonal(
+      rota.points,
+      { x: (start.x + end.x) / 2, y: start.y - 10 },
+      rota.startSide,
+      rota.endSide
+    );
+  }
 
-  if (linhas.length && ehCabecalho(linhas[0])) linhas.shift();
+  if (destino.id === "__FIM__") {
+    const start = getAnchorPoint(origem, "right");
+    const end = getAnchorPoint(destino, "left");
+    const rota = encontrarRotaSegura(start, end, posicoes, excludeIds, "left", "right", destino);
+    return montarRotaOrtogonal(
+      rota.points,
+      { x: (start.x + end.x) / 2, y: start.y - 10 },
+      rota.startSide,
+      rota.endSide
+    );
+  }
 
-  linhas.forEach((col) => {
-    while (col.length < 15) col.push("");
+  const pares = escolherParesCandidatos(origem, destino, rotulo);
+  const tentativas = [];
 
-    const ordem = Number(limpar(col[0])) || 0;
-    const id = limpar(col[1]);
-    const atividade = limpar(col[2]);
-    const tipo = limpar(col[3]) || "Não informado";
-    const sistema = limpar(col[4]) || "Sem sistema informado";
-    const tempo = tempoParaSegundos(limpar(col[5]));
-    const proxSim = limpar(col[6]);
-    const proxNao = limpar(col[7]);
-    const conexoesExtras = limpar(col[8]);
-    const categoriaOportunidade = normalizarCategoriaOportunidade(col[11]);
-    const percentualReducao = parsePercentual(col[12]);
-    const observacao = limpar(col[13]);
+  for (const par of pares) {
+    const start = getAnchorPoint(origem, par.startSide);
+    const end = getAnchorPoint(destino, par.endSide);
+    const rota = encontrarRotaSegura(start, end, posicoes, excludeIds, par.endSide, par.startSide, destino);
 
-    if (!id || !atividade) return;
+    const pontosRota = rota.points || [];
+    let comprimentoTotal = 0;
+    const segmentos = [];
 
-    etapas.push({
-      ordem,
-      id,
-      atividade,
-      tipo,
-      sistema,
-      tempo,
-      proxSim,
-      proxNao,
-      conexoesExtras,
-      categoriaOportunidade,
-      percentualReducao,
-      potencialReducao: percentualReducao,
-      observacao
-    });
-  });
+    for (let i = 0; i < pontosRota.length - 1; i++) {
+      const p1 = pontosRota[i];
+      const p2 = pontosRota[i + 1];
+      const comprimento = Math.abs(p2.x - p1.x) + Math.abs(p2.y - p1.y);
 
-  etapas.sort((a, b) => a.ordem - b.ordem);
-
-  const etapaPorId = {};
-  etapas.forEach(e => { etapaPorId[e.id] = e; });
-
-  let tempoTotal = 0;
-  let loops = 0;
-  let conexoesExtrasCount = 0;
-  let decisoes = 0;
-  const etapasImpactadasRetrabalho = new Set();
-  const tiposTempo = {};
-  const sistemasTempo = {};
-
-  etapas.forEach((etapa) => {
-    tempoTotal += etapa.tempo;
-    if (isPergunta(etapa.atividade)) decisoes++;
-
-    if (!tiposTempo[etapa.tipo]) tiposTempo[etapa.tipo] = 0;
-    tiposTempo[etapa.tipo] += etapa.tempo;
-
-    if (!sistemasTempo[etapa.sistema]) sistemasTempo[etapa.sistema] = 0;
-    sistemasTempo[etapa.sistema] += etapa.tempo;
-
-    const destinosSim = quebrarListaIds(etapa.proxSim);
-    const destinosNao = quebrarListaIds(etapa.proxNao);
-    const destinosExtras = quebrarListaIds(etapa.conexoesExtras);
-
-    destinosSim.forEach((destinoId) => {
-      const destino = etapaPorId[destinoId];
-      if (destino && destino.ordem < etapa.ordem) {
-        loops++;
-        adicionarEtapasImpactadasPorRetorno(etapa.id, destinoId, etapaPorId, etapas, etapasImpactadasRetrabalho);
+      if (comprimento > 0) {
+        segmentos.push({
+          p1,
+          p2,
+          comprimento,
+          inicio: comprimentoTotal,
+          fim: comprimentoTotal + comprimento
+        });
+        comprimentoTotal += comprimento;
       }
-    });
+    }
 
-    destinosNao.forEach((destinoId) => {
-      const destino = etapaPorId[destinoId];
-      if (destino && destino.ordem < etapa.ordem) {
-        loops++;
-        adicionarEtapasImpactadasPorRetorno(etapa.id, destinoId, etapaPorId, etapas, etapasImpactadasRetrabalho);
+    let labelPoint = { x: start.x + 18, y: start.y - 10 };
+
+    if (segmentos.length > 0 && comprimentoTotal > 0) {
+      const alvo = comprimentoTotal / 2;
+
+      for (const segmento of segmentos) {
+        if (alvo >= segmento.inicio && alvo <= segmento.fim) {
+          const deslocamento = alvo - segmento.inicio;
+
+          if (segmento.p1.y === segmento.p2.y) {
+            const direcao = segmento.p2.x >= segmento.p1.x ? 1 : -1;
+            labelPoint = {
+              x: segmento.p1.x + deslocamento * direcao,
+              y: segmento.p1.y
+            };
+          } else if (segmento.p1.x === segmento.p2.x) {
+            const direcao = segmento.p2.y >= segmento.p1.y ? 1 : -1;
+            labelPoint = {
+              x: segmento.p1.x,
+              y: segmento.p1.y + deslocamento * direcao
+            };
+          }
+          break;
+        }
       }
+    }
+
+    tentativas.push({
+      ...rota,
+      label: labelPoint
     });
+  }
 
-    conexoesExtrasCount += destinosExtras.length;
-
-    destinosExtras.forEach((destinoId) => {
-      const destino = etapaPorId[destinoId];
-      if (destino && destino.ordem < etapa.ordem) {
-        loops++;
-        adicionarEtapasImpactadasPorRetorno(etapa.id, destinoId, etapaPorId, etapas, etapasImpactadasRetrabalho);
-      }
-    });
+  tentativas.sort((a, b) => {
+    if (a.safe !== b.safe) return a.safe ? -1 : 1;
+    if (a.points.length !== b.points.length) return a.points.length - b.points.length;
+    return calcularComprimento(a.points) - calcularComprimento(b.points);
   });
 
-  let tempoPotencialRetrabalho = 0;
-  etapas.forEach((etapa) => {
-    if (etapasImpactadasRetrabalho.has(etapa.id)) tempoPotencialRetrabalho += etapa.tempo;
-  });
+  const melhor = tentativas[0];
 
-  const impactoPotencialRetrabalho = tempoTotal ? (tempoPotencialRetrabalho / tempoTotal) * 100 : 0;
-  const taxaDecisao = etapas.length ? (decisoes / etapas.length) * 100 : 0;
+  return montarRotaOrtogonal(
+    melhor.points,
+    melhor.label,
+    melhor.startSide,
+    melhor.endSide
+  );
+}
 
-  const tempoPorTipo = Object.entries(tiposTempo)
-    .map(([tipo, tempo]) => ({
-      tipo,
-      tempo,
-      percentual: tempoTotal ? (tempo / tempoTotal) * 100 : 0
-    }))
-    .sort((a, b) => b.tempo - a.tempo);
-
-  const tempoPorSistema = Object.entries(sistemasTempo)
-    .map(([sistema, tempo]) => ({
-      sistema,
-      tempo,
-      percentual: tempoTotal ? (tempo / tempoTotal) * 100 : 0
-    }))
-    .sort((a, b) => b.tempo - a.tempo);
-
-  const pareto = [...etapas]
-    .sort((a, b) => b.tempo - a.tempo)
-    .map((e) => ({ atividade: e.atividade, tempo: e.tempo }));
-
-  let acumulado = 0;
-  pareto.forEach((item) => {
-    item.percentual = tempoTotal ? (item.tempo / tempoTotal) * 100 : 0;
-    acumulado += item.percentual;
-    item.pareto = acumulado;
-  });
+function construirRotaCompartilhada(start, sharedInfo, posicoes = {}, excludeIds = [], preferredStartSide = null) {
+  const mergePoint = { x: sharedInfo.mergePoint.x, y: sharedInfo.mergePoint.y };
+  const end = { x: sharedInfo.end.x, y: sharedInfo.end.y };
+  const endSide = sharedInfo.endSide;
 
   return {
-    tempoTotal,
-    loops,
-    conexoesExtrasCount,
-    tempoPotencialRetrabalho,
-    impactoPotencialRetrabalho,
-    decisoes,
-    taxaDecisao,
-    tempoPorTipo,
-    tempoPorSistema,
-    pareto,
-    simulacaoMelhoria: montarDadosSimulacaoMelhoria(etapas)
+    points: buildOrthogonalToMerge(start, mergePoint, end, endSide, posicoes, excludeIds, preferredStartSide),
+    label: sharedInfo.label,
+    startSide: preferredStartSide,
+    endSide
   };
 }
 
-function extrairLinhasInfoProcesso() {
-  const el = document.getElementById("infoProcesso");
-  if (!el) return [];
+function desenharConexao(svg, origem, destino, rotulo = "", ordemConexao = 0, posicoes = {}, sharedRegistry = {}) {
+  let rota = escolherRota(origem, destino, { rotulo, ordemConexao, posicoes });
 
-  const labels = el.querySelectorAll(".exec-info-item");
-  if (labels.length) {
-    return Array.from(labels).map(item => {
-      const label = item.querySelector(".exec-info-label")?.innerText?.trim() || "";
-      const value = item.querySelector(".exec-info-value")?.innerText?.trim() || "";
-      return `${label}: ${value}`;
-    });
+  const sharedKey = `${destino.id}__${rota.endSide || "auto"}`;
+  const sharedInfo = sharedRegistry[sharedKey];
+
+  if (
+    destino.id !== "__FIM__" &&
+    destino.id !== "__INICIO__" &&
+    sharedInfo &&
+    origem.id !== sharedInfo.origemId &&
+    podeCompartilharDestino(origem, sharedInfo)
+  ) {
+    const parPreferido = escolherParesCandidatos(origem, destino, origem.isDecision ? rotulo : "")[0];
+    const startReal = getAnchorPoint(origem, parPreferido.startSide);
+
+    rota = construirRotaCompartilhada(
+      startReal,
+      sharedInfo,
+      posicoes,
+      [origem.id, destino.id, "__INICIO__", "__FIM__"],
+      parPreferido.startSide
+    );
+  } else if (
+    destino.id !== "__FIM__" &&
+    destino.id !== "__INICIO__" &&
+    !sharedInfo &&
+    rota.endSide
+  ) {
+    const end = getAnchorPoint(destino, rota.endSide);
+    const mergePoint = getMergePoint(end, rota.endSide);
+
+    sharedRegistry[sharedKey] = {
+      origemId: origem.id,
+      sourceGridCol: origem.gridCol,
+      mergePoint,
+      end,
+      endSide: rota.endSide,
+      label: rota.label
+    };
   }
 
-  return el.innerText.split("\n").map(l => l.trim()).filter(Boolean);
+  desenharPolyline(svg, rota.points);
+
+  if (rotulo && rota.label) {
+    desenharTextoSobreLinha(svg, rotulo, rota.label.x, rota.label.y - 14);
+  }
 }
 
-/* =========================
-   PDF
-========================= */
+function renderInformacoesProcessoExecutivas(dados) {
+  const quantidadeItens = [
+    ["Desenho", dados.desenho || "-"],
+    ["Processo", dados.processo || "-"],
+    ["Analista", dados.analista || "-"],
+    ["Negócio", dados.negocio || "-"],
+    ["Área", dados.area || "-"],
+    ["Gestor", dados.gestor || "-"]
+  ];
 
-function adicionarTextoQuebrado(doc, texto, x, y, maxWidth, lineHeight = 14, options = {}) {
-  const linhas = doc.splitTextToSize(String(texto || ""), maxWidth);
-  if (!linhas.length) return y;
-  doc.text(linhas, x, y, options);
-  return y + linhas.length * lineHeight;
+  return `
+    <div class="exec-card">
+      <div class="exec-card-title">Informações do Processo</div>
+      <div class="exec-info-grid">
+        ${quantidadeItens.map(item => `
+          <div class="exec-info-item">
+            <div class="exec-info-label">${escaparHTML(item[0])}</div>
+            <div class="exec-info-value">${escaparHTML(item[1])}</div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
 }
 
-function limparTextoPDF(txt) {
-  return String(txt || "").replace(/⏱/g, "").replace(/\s+/g, " ").trim();
+function renderTabelaAnaliseHTML({ titulo, columns, rows }) {
+  const thead = `
+    <thead>
+      <tr>
+        ${columns.map(col => `
+          <th class="${col.align === "center" ? "th-center" : ""}">
+            ${escaparHTML(col.header)}
+          </th>
+        `).join("")}
+      </tr>
+    </thead>
+  `;
+
+  const tbody = `
+    <tbody>
+      ${rows.map(row => `
+        <tr class="${escaparHTML(row.rowClass || "")}">
+          ${columns.map(col => `
+            <td class="${col.align === "center" ? "td-center" : ""}">
+              ${escaparHTML(row[col.key] ?? "")}
+            </td>
+          `).join("")}
+        </tr>
+      `).join("")}
+    </tbody>
+  `;
+
+  return `
+    <div class="exec-table-block">
+      <div class="exec-table-title">${escaparHTML(titulo)}</div>
+      <div class="exec-table-wrap">
+        <table class="exec-table">
+          ${thead}
+          ${tbody}
+        </table>
+      </div>
+    </div>
+  `;
 }
+
+function renderResumoAnaliseExecutivo(dados) {
+  return `
+    <div class="exec-summary-grid">
+      <div class="exec-summary-item">
+        <div class="exec-summary-label">Tempo total do processo</div>
+        <div class="exec-summary-value">${formatarTempo(dados.tempoTotal)}</div>
+      </div>
+      <div class="exec-summary-item">
+        <div class="exec-summary-label">Loops detectados</div>
+        <div class="exec-summary-value">${dados.loops}</div>
+      </div>
+      <div class="exec-summary-item">
+        <div class="exec-summary-label">Potencial retrabalho</div>
+        <div class="exec-summary-value">${formatarTempo(dados.tempoPotencialRetrabalho)} | ${formatarPercentual(dados.impactoPotencialRetrabalho)}%</div>
+      </div>
+      <div class="exec-summary-item">
+        <div class="exec-summary-label">Taxa de decisão</div>
+        <div class="exec-summary-value">${dados.decisoes} etapa(s) | ${formatarPercentual(dados.taxaDecisao)}%</div>
+      </div>
+      <div class="exec-summary-item exec-summary-item-improvement">
+        <div class="exec-summary-label">Ganho potencial em horas</div>
+        <div class="exec-summary-value">${formatarTempo(dados.simulacaoMelhoria.ganhoPotencialHoras)}</div>
+      </div>
+      <div class="exec-summary-item exec-summary-item-improvement">
+        <div class="exec-summary-label">Tempo total To Be</div>
+        <div class="exec-summary-value">${formatarTempo(dados.simulacaoMelhoria.tempoTotalToBe)}</div>
+      </div>
+      <div class="exec-summary-item exec-summary-item-improvement">
+        <div class="exec-summary-label">Eficiência potencial</div>
+        <div class="exec-summary-value">${formatarPercentual(dados.simulacaoMelhoria.eficienciaPotencial)}%</div>
+      </div>
+      <div class="exec-summary-item exec-summary-item-improvement">
+        <div class="exec-summary-label">Atividades na simulação</div>
+        <div class="exec-summary-value">${dados.simulacaoMelhoria.quantidadeAtividades}</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderTabelaSimulacaoMelhoria(dados) {
+  const maiorGanho = Math.max(...dados.rows.map(item => item.ganhoPotencial || 0), 0);
+
+  const rows = dados.rows.map(item => ({
+    atividade: item.atividade,
+    tempoAsIsFmt: formatarTempo(item.tempo),
+    reducaoFmt: `${formatarPercentual(item.percentualReducao)}%`,
+    categoriaFmt: item.categoriaOportunidade || "Sem oportunidade",
+    ganhoFmt: formatarTempo(item.ganhoPotencial),
+    tempoToBeFmt: formatarTempo(item.tempoToBe),
+    observacao: item.observacao || "-"
+  }));
+
+  rows.push({
+    atividade: `${dados.quantidadeAtividades} atividade(s)`,
+    tempoAsIsFmt: formatarTempo(dados.tempoTotalAsIs),
+    reducaoFmt: `${formatarPercentual(dados.eficienciaPotencial)}%`,
+    categoriaFmt: "-",
+    ganhoFmt: formatarTempo(dados.ganhoPotencialHoras),
+    tempoToBeFmt: formatarTempo(dados.tempoTotalToBe),
+    observacao: `Eficiência total: ${formatarPercentual(dados.eficienciaPotencial)}%`,
+    rowClass: "sim-total-row"
+  });
+
+  const thead = `
+    <thead>
+      <tr>
+        <th>Atividade</th>
+        <th class="th-center">Tempo As Is</th>
+        <th class="th-center">% Redução</th>
+        <th>Categoria</th>
+        <th class="th-center">Ganho Potencial</th>
+        <th class="th-center">Tempo To Be</th>
+        <th>Observação</th>
+      </tr>
+    </thead>
+  `;
+
+  const tbody = `
+    <tbody>
+      ${rows.map((row, idx) => {
+        const isMaiorOportunidade = idx < dados.rows.length && maiorGanho > 0 && dados.rows[idx].ganhoPotencial === maiorGanho;
+        const rowClass = row.rowClass || (isMaiorOportunidade ? "row-highlight-opportunity" : "");
+        return `
+          <tr class="${rowClass}">
+            <td>${escaparHTML(row.atividade)}</td>
+            <td class="td-center">${escaparHTML(row.tempoAsIsFmt)}</td>
+            <td class="td-center">${escaparHTML(row.reducaoFmt)}</td>
+            <td>${escaparHTML(row.categoriaFmt)}</td>
+            <td class="td-center">${escaparHTML(row.ganhoFmt)}</td>
+            <td class="td-center">${escaparHTML(row.tempoToBeFmt)}</td>
+            <td>${escaparHTML(row.observacao)}</td>
+          </tr>
+        `;
+      }).join("")}
+    </tbody>
+  `;
+
+  return `
+    <div class="exec-table-block">
+      <div class="exec-table-title">Simulação de Melhoria (As Is vs To Be)</div>
+      <div class="exec-table-wrap">
+        <table class="exec-table">
+          ${thead}
+          ${tbody}
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function renderRankingOportunidades(dados) {
+  if (!dados.ranking.length) return "";
+
+  return renderTabelaAnaliseHTML({
+    titulo: "Ranking das Top Atividades por Ganho Potencial",
+    columns: [
+      { header: "#", key: "ranking", align: "center" },
+      { header: "Atividade", key: "atividade", align: "left" },
+      { header: "Ganho Potencial", key: "ganhoFmt", align: "center" },
+      { header: "% Redução", key: "reducaoFmt", align: "center" },
+      { header: "Categoria", key: "categoria", align: "left" }
+    ],
+    rows: dados.ranking.map((item, index) => ({
+      ranking: String(index + 1),
+      atividade: item.atividade,
+      ganhoFmt: formatarTempo(item.ganhoPotencial),
+      reducaoFmt: `${formatarPercentual(item.percentualReducao)}%`,
+      categoria: item.categoriaOportunidade || "Sem oportunidade"
+    }))
+  });
+}
+
+function renderizarAnaliseExecutiva(dados) {
+  const tipoRows = dados.tempoPorTipo.map(item => ({
+    tipo: item.tipo,
+    tempoFmt: formatarTempo(item.tempo),
+    percentualFmt: `${formatarPercentual(item.percentual)}%`
+  }));
+
+  const sistemaRows = dados.tempoPorSistema.map(item => ({
+    sistema: item.sistema,
+    tempoFmt: formatarTempo(item.tempo),
+    percentualFmt: `${formatarPercentual(item.percentual)}%`
+  }));
+
+  const paretoRows = dados.pareto.map(item => ({
+    atividade: item.atividade,
+    tempoFmt: formatarTempo(item.tempo),
+    percentualFmt: `${formatarPercentual(item.percentual)}%`,
+    paretoFmt: `${formatarPercentual(item.pareto)}%`
+  }));
+
+  return `
+    <div class="exec-card">
+      <div class="exec-card-title">Análise do Processo</div>
+      ${renderResumoAnaliseExecutivo(dados)}
+      ${renderTabelaAnaliseHTML({
+        titulo: "Tempo por Tipo",
+        columns: [
+          { header: "Tipo", key: "tipo", align: "left" },
+          { header: "Tempo (horas)", key: "tempoFmt", align: "center" },
+          { header: "%", key: "percentualFmt", align: "center" }
+        ],
+        rows: tipoRows
+      })}
+      ${renderTabelaAnaliseHTML({
+        titulo: "Tempo por Sistema",
+        columns: [
+          { header: "Sistema", key: "sistema", align: "left" },
+          { header: "Tempo (horas)", key: "tempoFmt", align: "center" },
+          { header: "%", key: "percentualFmt", align: "center" }
+        ],
+        rows: sistemaRows
+      })}
+      ${renderTabelaAnaliseHTML({
+        titulo: "Pareto de Tempo",
+        columns: [
+          { header: "Atividade", key: "atividade", align: "left" },
+          { header: "Tempo (horas)", key: "tempoFmt", align: "center" },
+          { header: "%", key: "percentualFmt", align: "center" },
+          { header: "% Acumulado", key: "paretoFmt", align: "center" }
+        ],
+        rows: paretoRows
+      })}
+      ${renderTabelaSimulacaoMelhoria(dados.simulacaoMelhoria)}
+      ${renderRankingOportunidades(dados.simulacaoMelhoria)}
+    </div>
+  `;
+}
+
+// Parte 4 Código
 
 function getPageSpec(doc) {
   return {
